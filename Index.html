@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>House Painting Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f7;
+      color: #222;
+    }
+    header {
+      background: #1f4f7b;
+      color: #fff;
+      padding: 12px 16px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    header small {
+      display: block;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    .container {
+      padding: 12px 12px 80px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 12px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #555;
+    }
+    .weather-box, .house-card, .detail-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .weather-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .weather-forecast {
+      display: flex;
+      overflow-x: auto;
+      gap: 8px;
+    }
+    .weather-day {
+      min-width: 80px;
+      background: #f5f7fb;
+      border-radius: 8px;
+      padding: 6px;
+      font-size: 11px;
+      text-align: center;
+    }
+    .weather-day strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+    .filters {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      flex: 1;
+      min-width: 80px;
+      border: none;
+      border-radius: 999px;
+      padding: 6px 8px;
+      font-size: 12px;
+      background: #e3e7f0;
+      color: #333;
+    }
+    .filter-btn.active {
+      background: #1f4f7b;
+      color: #fff;
+    }
+    .house-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .house-main {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .house-sub {
+      font-size: 11px;
+      color: #666;
+    }
+    .status-pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .status-not-started {
+      background: #f0f0f0;
+      color: #555;
+    }
+    .status-in-progress {
+      background: #fff4d6;
+      color: #8a5a00;
+    }
+    .status-completed {
+      background: #dff7df;
+      color: #1b6b1b;
+    }
+    .detail-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 10;
+    }
+    .detail-card {
+      width: 100%;
+      max-height: 90vh;
+      border-radius: 16px 16px 0 0;
+      padding-bottom: 20px;
+      overflow-y: auto;
+    }
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .detail-header h2 {
+      font-size: 16px;
+      margin: 0;
+    }
+    .close-btn {
+      border: none;
+      background: none;
+      font-size: 20px;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      display: block;
+      margin-top: 8px;
+      margin-bottom: 2px;
+    }
+    select, textarea, input[type="text"] {
+      width: 100%;
+      font-size: 13px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+    .small {
+      font-size: 11px;
+      color: #777;
+    }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .btn {
+      flex: 1;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #1f4f7b;
+      color: #fff;
+    }
+    .btn-outline {
+      background: #fff;
+      color: #1f4f7b;
+      border: 1px solid #1f4f7b;
+    }
+    .footer-note {
+      font-size: 10px;
+      text-align: center;
+      color: #888;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>House Painting Tracker</h1>
+  <small>Lafayette, IN · Summer painting plan</small>
+</header>
+
+<div class="container">
+  <div class="section-title">Weather (5-day forecast)</div>
+  <div class="weather-box">
+    <div class="weather-header">
+      <div>
+        <strong>Lafayette, IN</strong><br />
+        <span id="weather-updated" class="small">Loading forecast…</span>
+      </div>
+      <button id="refresh-weather" class="btn btn-outline" style="flex:0 0 auto;padding:4px 8px;font-size:11px;">
+        Refresh
+      </button>
+    </div>
+    <div id="weather-forecast" class="weather-forecast"></div>
+    <div class="small" style="margin-top:4px;">
+      Uses OpenWeatherMap · Best for planning dry, mild days for exterior painting.
+    </div>
+  </div>
+
+  <div class="section-title">Houses</div>
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="not-started">Not started</button>
+    <button class="filter-btn" data-filter="in-progress">In progress</button>
+    <button class="filter-btn" data-filter="completed">Completed</button>
+  </div>
+  <div id="house-list"></div>
+
+  <div class="footer-note">
+    Data is stored locally on this device (in your browser storage).
+  </div>
+</div>
+
+<!-- Detail overlay -->
+<div id="detail-overlay" class="detail-overlay">
+  <div class="detail-card">
+    <div class="detail-header">
+      <h2 id="detail-address"></h2>
+      <button class="close-btn" id="close-detail">&times;</button>
+    </div>
+    <div class="small" id="detail-subline"></div>
+
+    <label for="detail-status">Status</label>
+    <select id="detail-status">
+      <option value="not-started">Not started</option>
+      <option value="in-progress">In progress</option>
+      <option value="completed">Completed</option>
+    </select>
+
+    <label for="detail-notes">Notes (condition, prep, colors, etc.)</label>
+    <textarea id="detail-notes" placeholder="Example: Peeling on south side, needs scraping and primer."></textarea>
+
+    <label for="detail-photos">Photo notes / links</label>
+    <textarea id="detail-photos" placeholder="Example: 'Before' photos saved in iCloud album 'Sourgum 1200'."></textarea>
+
+    <label>Last updated</label>
+    <div class="small" id="detail-updated">Not yet updated</div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" id="mark-completed">Mark completed</button>
+      <button class="btn btn-primary" id="save-detail">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ====== CONFIG: WEATHER ======
+  const OPENWEATHER_API_KEY = "33d67245406dbd31d48ce777640c12e7"; // <-- put your key here
+  const OPENWEATHER_CITY = "Lafayette,US";
+
+  // ====== HOUSE DATA (from your spreadsheet) ======
+  // You can add all 59 here; I’ve started with your Sourgum + Abraham + Austrian + Electra examples.
+  const baseHouses = [
+    // Sourgum Lane
+    { id: "1200 Sourgum Lane", number: "1200", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1208 Sourgum Lane", number: "1208", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1212 Sourgum Lane", number: "1212", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1216 Sourgum Lane", number: "1216", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1217 Sourgum Lane", number: "1217", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1220 Sourgum Lane", number: "1220", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1221 Sourgum Lane", number: "1221", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1300 Sourgum Lane", number: "1300", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1302 Sourgum Lane", number: "1302", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1305 Sourgum Lane", number: "1305", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1308 Sourgum Lane", number: "1308", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1309 Sourgum Lane", number: "1309", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1312 Sourgum Lane", number: "1312", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1314 Sourgum Lane", number: "1314", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1315 Sourgum Lane", number: "1315", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1318 Sourgum Lane", number: "1318", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1320 Sourgum Lane", number: "1320", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1324 Sourgum Lane", number: "1324", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1326 Sourgum Lane", number: "1326", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1329 Sourgum Lane", number: "1329", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1333 Sourgum Lane", number: "1333", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1336 Sourgum Lane", number: "1336", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1361 Sourgum Lane", number: "1361", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1365 Sourgum Lane", number: "1365", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1369 Sourgum Lane", number: "1369", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1401 Sourgum Lane", number: "1401", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1409 Sourgum Lane", number: "1409", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+    { id: "1413 Sourgum Lane", number: "1413", street: "Sourgum Lane", city: "Lafayette", state: "IN" },
+
+    // Abraham Court
+    { id: "3950 Abraham Court", number: "3950", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3952 Abraham Court", number: "3952", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3956 Abraham Court", number: "3956", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3960 Abraham Court", number: "3960", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3976 Abraham Court", number: "3976", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3980 Abraham Court", number: "3980", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3983 Abraham Court", number: "3983", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3987 Abraham Court", number: "3987", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3988 Abraham Court", number: "3988", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3989 Abraham Court", number: "3989", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3993 Abraham Court", number: "3993", street: "Abraham Court", city: "Lafayette", state: "IN" },
+    { id: "3995 Abraham Court", number: "3995", street: "Abraham Court", city: "Lafayette", state: "IN" },
+
+    // Austrian Court
+    { id: "3957 Austrian Court", number: "3957", street: "Austrian Court", city: "Lafayette", state: "IN" },
+    { id: "3932 Austrian Court", number: "3932", street: "Austrian Court", city: "Lafayette", state: "IN" },
+    { id: "3938 Austrian Court", number: "3938", street: "Austrian Court", city: "Lafayette", state: "IN" },
+    { id: "3940 Austrian Court", number: "3940", street: "Austrian Court", city: "Lafayette", state: "IN" },
+    { id: "3944 Austrian Court", number: "3944", street: "Austrian Court", city: "Lafayette", state: "IN" },
+    { id: "3945 Austrian Court", number: "3945", street: "Austrian Court", city: "Lafayette", state: "IN" },
+    { id: "3949 Austrian Court", number: "3949", street: "Austrian Court", city: "Lafayette", state: "IN" },
+    { id: "3950 Austrian Court", number: "3950", street: "Austrian Court", city: "Lafayette", state: "IN" },
+    { id: "3951 Austrian Court", number: "3951", street: "Austrian Court", city: "Lafayette", state: "IN" },
+    { id: "3952 Austrian Court", number: "3952", street: "Austrian Court", city: "Lafayette", state: "IN" },
+    { id: "3958 Austrian Court", number: "3958", street: "Austrian Court", city: "Lafayette", state: "IN" },
+
+    // Electra Court
+    { id: "3931 Electra Court", number: "3931", street: "Electra Court", city: "Lafayette", state: "IN" },
+    { id: "3934 Electra Court", number: "3934", street: "Electra Court", city: "Lafayette", state: "IN" },
+    { id: "3938 Electra Court", number: "3938", street: "Electra Court", city: "Lafayette", state: "IN" },
+    { id: "3944 Electra Court", number: "3944", street: "Electra Court", city: "Lafayette", state: "IN" },
+    { id: "3945 Electra Court", number: "3945", street: "Electra Court", city: "Lafayette", state: "IN" },
+    { id: "3950 Electra Court", number: "3950", street: "Electra Court", city: "Lafayette", state: "IN" },
+    { id: "3953 Electra Court", number: "3953", street: "Electra Court", city: "Lafayette", state: "IN" },
+    { id: "3956 Electra Court", number: "3956", street: "Electra Court", city: "Lafayette", state: "IN" }
+  ];
+
+  const STORAGE_KEY = "housePaintingTrackerData_v1";
+
+  function loadHouseData() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) {
+      return baseHouses.map(h => ({
+        ...h,
+        status: "not-started",
+        notes: "",
+        photos: "",
+        updatedAt: null
+      }));
+    }
+    try {
+      const parsed = JSON.parse(saved);
+      // Merge with base in case you add new houses later
+      const map = new Map(parsed.map(h => [h.id, h]));
+      return baseHouses.map(h => {
+        if (map.has(h.id)) return map.get(h.id);
+        return { ...h, status: "not-started", notes: "", photos: "", updatedAt: null };
+      });
+    } catch {
+      return baseHouses.map(h => ({
+        ...h,
+        status: "not-started",
+        notes: "",
+        photos: "",
+        updatedAt: null
+      }));
+    }
+  }
+
+  function saveHouseData(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  let houses = loadHouseData();
+  let currentFilter = "all";
+  let currentHouseId = null;
+
+  const houseListEl = document.getElementById("house-list");
+  const filterButtons = document.querySelectorAll(".filter-btn");
+
+  function statusClass(status) {
+    if (status === "in-progress") return "status-in-progress";
+    if (status === "completed") return "status-completed";
+    return "status-not-started";
+  }
+
+  function statusLabel(status) {
+    if (status === "in-progress") return "In progress";
+    if (status === "completed") return "Completed";
+    return "Not started";
+  }
+
+  function renderHouseList() {
+    houseListEl.innerHTML = "";
+    const filtered = houses.filter(h => {
+      if (currentFilter === "all") return true;
+      return h.status === currentFilter;
+    });
+
+    filtered.forEach(h => {
+      const card = document.createElement("div");
+      card.className = "house-card";
+      card.onclick = () => openDetail(h.id);
+
+      const left = document.createElement("div");
+      left.innerHTML = `
+        <div class="house-main">${h.number} ${h.street}</div>
+        <div class="house-sub">${h.city}, ${h.state}${h.updatedAt ? " · Updated " + new Date(h.updatedAt).toLocaleDateString() : ""}</div>
+      `;
+
+      const right = document.createElement("div");
+      const pill = document.createElement("span");
+      pill.className = "status-pill " + statusClass(h.status);
+      pill.textContent = statusLabel(h.status);
+      right.appendChild(pill);
+
+      card.appendChild(left);
+      card.appendChild(right);
+      houseListEl.appendChild(card);
+    });
+  }
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      filterButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentFilter = btn.dataset.filter;
+      renderHouseList();
+    });
+  });
+
+  // ====== DETAIL PANEL ======
+  const detailOverlay = document.getElementById("detail-overlay");
+  const closeDetailBtn = document.getElementById("close-detail");
+  const detailAddressEl = document.getElementById("detail-address");
+  const detailSublineEl = document.getElementById("detail-subline");
+  const detailStatusEl = document.getElementById("detail-status");
+  const detailNotesEl = document.getElementById("detail-notes");
+  const detailPhotosEl = document.getElementById("detail-photos");
+  const detailUpdatedEl = document.getElementById("detail-updated");
+  const saveDetailBtn = document.getElementById("save-detail");
+  const markCompletedBtn = document.getElementById("mark-completed");
+
+  function openDetail(id) {
+    const h = houses.find(x => x.id === id);
+    if (!h) return;
+    currentHouseId = id;
+    detailAddressEl.textContent = `${h.number} ${h.street}`;
+    detailSublineEl.textContent = `${h.city}, ${h.state}`;
+    detailStatusEl.value = h.status || "not-started";
+    detailNotesEl.value = h.notes || "";
+    detailPhotosEl.value = h.photos || "";
+    detailUpdatedEl.textContent = h.updatedAt
+      ? new Date(h.updatedAt).toLocaleString()
+      : "Not yet updated";
+    detailOverlay.style.display = "flex";
+  }
+
+  function closeDetail() {
+    detailOverlay.style.display = "none";
+    currentHouseId = null;
+  }
+
+  closeDetailBtn.addEventListener("click", closeDetail);
+  detailOverlay.addEventListener("click", (e) => {
+    if (e.target === detailOverlay) closeDetail();
+  });
+
+  saveDetailBtn.addEventListener("click", () => {
+    if (!currentHouseId) return;
+    const idx = houses.findIndex(h => h.id === currentHouseId);
+    if (idx === -1) return;
+    houses[idx].status = detailStatusEl.value;
+    houses[idx].notes = detailNotesEl.value;
+    houses[idx].photos = detailPhotosEl.value;
+    houses[idx].updatedAt = new Date().toISOString();
+    saveHouseData(houses);
+    renderHouseList();
+    closeDetail();
+  });
+
+  markCompletedBtn.addEventListener("click", () => {
+    detailStatusEl.value = "completed";
+  });
+
+  // ====== WEATHER ======
+  const weatherForecastEl = document.getElementById("weather-forecast");
+  const weatherUpdatedEl = document.getElementById("weather-updated");
+  const refreshWeatherBtn = document.getElementById("refresh-weather");
+
+  async function fetchWeather() {
+    if (!OPENWEATHER_API_KEY || OPENWEATHER_API_KEY === "YOUR_OPENWEATHER_API_KEY_HERE") {
+      weatherUpdatedEl.textContent = "Add your OpenWeather API key in the code to see forecast.";
+      return;
+    }
+    weatherUpdatedEl.textContent = "Loading forecast…";
+    weatherForecastEl.innerHTML = "";
+    try {
+      const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(
+        OPENWEATHER_CITY
+      )}&units=imperial&appid=${OPENWEATHER_API_KEY}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const byDay = {};
+      data.list.forEach(entry => {
+        const date = entry.dt_txt.split(" ")[0];
+        if (!byDay[date]) byDay[date] = [];
+        byDay[date].push(entry);
+      });
+      const days = Object.keys(byDay).slice(0, 5);
+      days.forEach(date => {
+        const entries = byDay[date];
+        const temps = entries.map(e => e.main.temp);
+        const min = Math.round(Math.min(...temps));
+        const max = Math.round(Math.max(...temps));
+        const desc = entries[0].weather[0].description;
+        const d = new Date(date + "T12:00:00");
+        const label = d.toLocaleDateString(undefined, { weekday: "short", month: "numeric", day: "numeric" });
+
+        const dayEl = document.createElement("div");
+        dayEl.className = "weather-day";
+        dayEl.innerHTML = `
+          <strong>${label}</strong>
+          <div>${min}–${max}°F</div>
+          <div>${desc}</div>
+        `;
+        weatherForecastEl.appendChild(dayEl);
+      });
+      weatherUpdatedEl.textContent = "Updated " + new Date().toLocaleTimeString();
+    } catch (e) {
+      weatherUpdatedEl.textContent = "Could not load forecast.";
+    }
+  }
+
+  refreshWeatherBtn.addEventListener("click", fetchWeather);
+
+  // ====== INIT ======
+  renderHouseList();
+  fetchWeather();
+</script>
+</body>
+</html>
